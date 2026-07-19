@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIME Advisor Brief — Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="unit-label" id="topUnitLabel">ADVISOR BRIEF</div>
+    <div class="topbar-center">
+      <div class="classif-badge" id="topClassif">UNCLASSIFIED</div>
+    </div>
+    <div class="topbar-right">
+      <div class="period-label" id="topPeriod">—</div>
+      <div class="period-label" id="topDataFetched" style="color:var(--text-muted);font-size:0.68rem;border-left:1px solid var(--border);padding-left:10px;margin-left:2px;">No brief loaded</div>
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">&#8593; Load JSON</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none">
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <button class="nav-tab active" data-page="overview" onclick="window.navTo('overview')">Overview<span class="key-hint">0</span></button>
+    <button class="nav-tab" data-page="diplomatic" onclick="window.navTo('diplomatic')">Diplomatic<span class="key-hint">←</span></button>
+    <button class="nav-tab" data-page="informational" onclick="window.navTo('informational')">Informational<span class="key-hint"></span></button>
+    <button class="nav-tab" data-page="military" onclick="window.navTo('military')">Military<span class="key-hint"></span></button>
+    <button class="nav-tab" data-page="economic" onclick="window.navTo('economic')">Economic<span class="key-hint">→</span></button>
+    <button class="nav-tab" data-page="prompts" onclick="window.navTo('prompts')">Prompt Lab<span class="key-hint">P</span></button>
+    <button class="nav-tab" data-page="leaders" onclick="window.navTo('leaders')">Key Leaders<span class="key-hint">L</span></button>
+    <button class="nav-tab" data-page="resources" onclick="window.navTo('resources')">Resources<span class="key-hint">R</span></button>
+  </div>
+
+  <!-- JS ERROR BANNER — hidden unless crash occurs -->
+  <div id="js-error-banner" style="display:none;background:#8b2222;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;letter-spacing:1px;padding:8px 24px;flex-shrink:0;"></div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══ OVERVIEW PAGE ══ -->
+    <div class="page active" id="page-overview">
+
+      <!-- META STRIP — fixed, doesn't scroll -->
+      <div class="overview-meta" style="flex-shrink:0;padding:16px 24px 12px;">
+        <div class="meta-block"><div class="meta-block-label">Country</div><div class="meta-block-value" id="ov-country">—</div></div>
+        <div class="meta-block"><div class="meta-block-label">Period</div><div class="meta-block-value" id="ov-period">—</div></div>
+        <div class="meta-block"><div class="meta-block-label">Unit</div><div class="meta-block-value" id="ov-unit">—</div></div>
+        <div class="meta-block"><div class="meta-block-label">Classification</div><div class="meta-block-value" id="ov-classif">UNCLASSIFIED</div></div>
+        <div class="meta-block"><div class="meta-block-label">Data Fetched</div><div class="meta-block-value" id="ov-fetched" style="font-size:1.1rem;">—</div></div>
+        <div class="meta-block"><div class="meta-block-label">Data Currency</div><div class="meta-block-value" id="ov-currency" style="font-size:1.1rem;">—</div></div>
+      </div>
+
+      <!-- MAIN LAYOUT — fills remaining height -->
+      <div id="overviewLayout" style="display:flex;gap:0;flex:1;min-height:0;padding:0 24px 16px;">
+
+        <!-- DIME cards pane — scrolls internally -->
+        <div class="overview-grid" id="overviewGrid" style="margin-bottom:0;flex:1;min-width:200px;overflow-y:auto;align-content:start;padding-right:4px;">
+          <div class="overview-card" onclick="navTo('diplomatic')">
+            <div class="overview-card-letter">D</div>
+            <div class="overview-card-title">Diplomatic</div>
+            <div class="overview-card-summary" id="ov-d-summary">Load a JSON brief to populate this dashboard.</div>
+            <div class="overview-card-items" id="ov-d-items"></div>
+          </div>
+          <div class="overview-card" onclick="navTo('informational')">
+            <div class="overview-card-letter">I</div>
+            <div class="overview-card-title">Informational</div>
+            <div class="overview-card-summary" id="ov-i-summary">Use the Load JSON button above to begin.</div>
+            <div class="overview-card-items" id="ov-i-items"></div>
+          </div>
+          <div class="overview-card" onclick="navTo('military')">
+            <div class="overview-card-letter">M</div>
+            <div class="overview-card-title">Military</div>
+            <div class="overview-card-summary" id="ov-m-summary">Visit Prompt Lab to generate your JSON.</div>
+            <div class="overview-card-items" id="ov-m-items"></div>
+          </div>
+          <div class="overview-card" onclick="navTo('economic')">
+            <div class="overview-card-letter">E</div>
+            <div class="overview-card-title">Economic</div>
+            <div class="overview-card-summary" id="ov-e-summary">Arrow keys navigate between pillars.</div>
+            <div class="overview-card-items" id="ov-e-items"></div>
+          </div>
+        </div>
+
+        <!-- DRAG DIVIDER -->
+        <div id="mapDivider" title="Drag to resize"
+          style="width:8px;flex-shrink:0;cursor:col-resize;background:var(--bg2);border-left:1px solid var(--border);border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;transition:background 0.15s;user-select:none;"
+          onmouseenter="this.style.background='var(--gold-faint)'"
+          onmouseleave="this.style.background='var(--bg2)'">
+          <span style="color:var(--border);font-size:10px;line-height:1;writing-mode:vertical-rl;">⋮⋮</span>
+        </div>
+
+        <!-- AOR MAP pane — fills height, never overflows -->
+        <div id="mapPane" style="width:480px;min-width:180px;flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;position:relative;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);padding:8px 14px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <span>AOR — <span id="mapAorLabel">Not Set</span></span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <select id="mapLayerSelect" onchange="switchMapLayer(this.value)"
+                style="background:var(--bg2);border:1px solid var(--border);color:var(--text-dim);font-family:'Barlow Condensed',sans-serif;font-size:0.62rem;letter-spacing:1px;padding:2px 6px;border-radius:3px;cursor:pointer;outline:none;">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="terrain">Terrain</option>
+                <option value="satellite">Satellite</option>
+              </select>
+              <span style="color:var(--gold-dim);" id="mapAlignedLabel"></span>
+            </div>
+          </div>
+          <div id="aorMap" style="flex:1;width:100%;min-height:0;position:relative;"></div>
+          <!-- FULLSCREEN BUTTON -->
+          <button id="mapFullscreenBtn" onclick="toggleMapFullscreen()"
+            title="Toggle fullscreen map"
+            style="position:absolute;bottom:10px;right:10px;z-index:999;background:rgba(13,13,13,0.85);border:1px solid var(--border-gold);color:var(--gold);width:32px;height:32px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;">
+            ⛶
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ DIPLOMATIC PAGE ══ -->
+    <div class="page" id="page-diplomatic">
+      <div class="pillar-header">
+        <div class="pillar-title-row">
+          <div class="pillar-title">Diplomatic</div>
+          <div class="pillar-subtitle">Bilateral &amp; Multilateral Relations</div>
+        </div>
+        <div class="pillar-summary" id="d-summary">Load a brief JSON to populate this view.</div>
+      </div>
+      <div class="stats-strip" id="d-stats"></div>
+      <div class="pillar-charts" id="d-charts"></div>
+      <div class="section-divider"></div>
+      <div class="items-list" id="d-items"></div>
+    </div>
+
+    <!-- ══ INFORMATIONAL PAGE ══ -->
+    <div class="page" id="page-informational">
+      <div class="pillar-header">
+        <div class="pillar-title-row">
+          <div class="pillar-title">Informational</div>
+          <div class="pillar-subtitle">Media Environment &amp; Info Ops</div>
+        </div>
+        <div class="pillar-summary" id="i-summary">Load a brief JSON to populate this view.</div>
+      </div>
+
+      <div class="gdelt-panel">
+        <div class="gdelt-panel-header">
+          <div class="gdelt-title">GDELT — Live Media Volume (30 days)</div>
+          <div class="live-badge"><div class="live-dot"></div> Live Feed</div>
+        </div>
+        <div class="gdelt-chart-area">
+          <canvas id="gdeltCanvas" height="80"></canvas>
+          <div class="gdelt-loading" id="gdeltLoading">Load a brief JSON to activate live media tracking.</div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-bottom:16px;">
+        <div class="gdelt-panel">
+          <div class="gdelt-panel-header">
+            <div class="gdelt-title">GDELT — Media Tone (30 days)</div>
+            <div class="live-badge"><div class="live-dot"></div> Live</div>
+          </div>
+          <div class="gdelt-chart-area">
+            <canvas id="gdeltToneCanvas" height="80"></canvas>
+            <div class="gdelt-loading" id="gdeltToneLoading">Load a brief JSON to activate tone tracking.</div>
+          </div>
+        </div>
+        <div class="stats-strip" style="flex-direction:column; margin-bottom:0;" id="i-stats"></div>
+      </div>
+
+      <div class="pillar-charts" id="i-charts"></div>
+
+      <div class="section-divider"></div>
+      <div class="items-list" id="i-items"></div>
+    </div>
+
+    <!-- ══ MILITARY PAGE ══ -->
+    <div class="page" id="page-military">
+      <div class="pillar-header">
+        <div class="pillar-title-row">
+          <div class="pillar-title">Military</div>
+          <div class="pillar-subtitle">Defense Posture &amp; Readiness</div>
+        </div>
+        <div class="pillar-summary" id="m-summary">Load a brief JSON to populate this view.</div>
+      </div>
+      <div class="stats-strip" id="m-stats"></div>
+      <div class="pillar-charts" id="m-charts"></div>
+      <div class="section-divider"></div>
+      <div class="items-list" id="m-items"></div>
+    </div>
+
+    <!-- ══ ECONOMIC PAGE ══ -->
+    <div class="page" id="page-economic">
+      <div class="pillar-header">
+        <div class="pillar-title-row">
+          <div class="pillar-title">Economic</div>
+          <div class="pillar-subtitle">Macro Indicators &amp; Defense Spending</div>
+        </div>
+        <div class="pillar-summary" id="e-summary">Load a brief JSON to populate this view.</div>
+      </div>
+
+      <div class="pillar-charts" id="e-charts"></div>
+
+      <div class="stats-strip" id="e-stats"></div>
+      <div class="section-divider"></div>
+      <div class="items-list" id="e-items"></div>
+    </div>
+
+    <!-- ══ PROMPT LAB PAGE ══ -->
+    <div class="page" id="page-prompts">
+      <div class="prompts-header">
+        <div class="pillar-title-row">
+          <div class="pillar-title">Prompt Lab</div>
+          <div class="pillar-subtitle">Brief Preparation Toolkit</div>
+        </div>
+        <div class="prompts-intro">
+          Fill in your mission details below — every prompt updates automatically. Copy a prompt, paste it into any
+          web-enabled LLM (Claude, GPT, Gemini, etc.), and drop the JSON it returns onto this dashboard.
+          If you leave a field blank, the prompt instructs the LLM to ask you for it.
+        </div>
+      </div>
+
+      <!-- MISSION CONFIG -->
+      <div class="prompt-config">
+        <div class="prompt-config-field">
+          <label for="cfg-country">Country / AOR</label>
+          <input type="text" id="cfg-country" placeholder="e.g., Country X" oninput="applyPromptConfig()">
+        </div>
+        <div class="prompt-config-field">
+          <label for="cfg-unit">Your Unit</label>
+          <input type="text" id="cfg-unit" placeholder="e.g., Advisor Co A" oninput="applyPromptConfig()">
+        </div>
+        <div class="prompt-config-field">
+          <label for="cfg-partner">Partner Unit</label>
+          <input type="text" id="cfg-partner" placeholder="e.g., 1st Infantry Brigade" oninput="applyPromptConfig()">
+        </div>
+        <div class="prompt-config-field">
+          <label for="cfg-location">Partner Location</label>
+          <input type="text" id="cfg-location" placeholder="e.g., Camp / Garrison name" oninput="applyPromptConfig()">
+        </div>
+      </div>
+
+      <!-- DIPLOMATIC -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Diplomatic</div>
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div><span class="prompt-source">Foreign Ministry &amp; Alliances</span><span class="prompt-source-url">MFA · NATO/regional orgs · embassies</span></div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p-d-1')">Copy Prompt</button>
+          </div>
+          <div class="prompt-text" id="p-d-1">You are an intelligence analyst preparing a monthly diplomatic update on [COUNTRY] for a military advisor team brief ([YOUR UNIT], partnered with [PARTNER UNIT]).
+
+If any bracketed placeholder above is unfilled, ask me for the missing information before you begin.
+
+Review the past 30 days of open reporting from [COUNTRY]'s ministry of foreign affairs, its head-of-state and head-of-government offices, relevant alliance newsrooms (e.g., NATO, EU, regional organizations), and the U.S. embassy in [COUNTRY].
+
+Identify the 3-5 most significant diplomatic developments: alliance engagement, bilateral relations with the US, regional security cooperation, government stability, and any shifts in diplomatic posture.
+
+Return ONLY a valid JSON object in this exact format, with no preamble:
+{
+  "summary": "2-sentence executive summary of the diplomatic environment",
+  "stats": [
+    {"label": "Example Metric", "value": "14", "delta": "+2", "delta_dir": "up", "type": "number"}
+  ],
+  "items": [
+    {"title": "SHORT TITLE IN CAPS", "status": "green", "trend": "up", "notes": "1-2 sentence operational summary.", "link": "https://direct-article-url"}
+  ]
+}
+Rules: status = green|amber|red. trend = up|flat|down. Every item link must be the DIRECT URL of the article the information came from, not a homepage.</div>
+        </div>
+      </div>
+
+      <!-- INFORMATIONAL -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Informational</div>
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div><span class="prompt-source">Media Environment &amp; Disinformation</span><span class="prompt-source-url">disinfo databases · press-freedom indices · platform research</span></div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p-i-1')">Copy Prompt</button>
+          </div>
+          <div class="prompt-text" id="p-i-1">You are an information environment analyst preparing a monthly update on [COUNTRY] for a military advisor team ([YOUR UNIT]).
+
+If any bracketed placeholder above is unfilled, ask me for the missing information before you begin.
+
+Research the past 30 days: hostile or foreign disinformation narratives targeting [COUNTRY] (check EUvsDisinfo, EU DisinfoLab, DFRLab, and national fact-checkers where applicable), press-freedom developments (Freedom House, RSF), notable cyber or influence incidents against government or media, and any counter-messaging efforts.
+
+Return ONLY valid JSON with no preamble:
+{
+  "summary": "2-sentence executive summary of the information environment",
+  "stats": [
+    {"label": "Example Metric", "value": "23", "delta": "+5", "delta_dir": "down", "type": "number"}
+  ],
+  "items": [
+    {"title": "NARRATIVE OR INCIDENT TITLE", "status": "red", "trend": "up", "notes": "Description, reach, and operational relevance.", "link": "https://direct-article-url"}
+  ]
+}
+Rules: status green = contained, amber = active/monitored, red = high reach/urgent. Every link must be the direct source article URL.</div>
+        </div>
+      </div>
+
+      <!-- MILITARY -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Military</div>
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div><span class="prompt-source">Defense Posture &amp; Readiness</span><span class="prompt-source-url">MoD · defense press · conflict trackers · expenditure data</span></div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p-m-1')">Copy Prompt</button>
+          </div>
+          <div class="prompt-text" id="p-m-1">You are a defense analyst preparing a monthly military update on [COUNTRY] for [YOUR UNIT], a military advisor team partnered with [PARTNER UNIT] at [LOCATION].
+
+If any bracketed placeholder above is unfilled, ask me for the missing information before you begin.
+
+Review the past 30 days: [COUNTRY] ministry of defence releases, exercises conducted or announced, equipment acquisitions and deliveries, alliance force contributions, readiness declarations, security incidents (incursions, strikes, border events), and defense-budget developments (check national sources plus NATO/SIPRI expenditure data and conflict trackers such as ACLED and ISW where relevant). Prioritize anything affecting the area around [LOCATION] or the [PARTNER UNIT] mission.
+
+Return ONLY valid JSON with no preamble:
+{
+  "summary": "2-sentence executive summary of the military situation",
+  "stats": [
+    {"label": "Defence Budget (GDP%)", "value": "2.5%", "delta": "+0.3%", "delta_dir": "up", "type": "number"},
+    {"label": "Trend Example", "values": [1.8, 2.0, 2.1, 2.3, 2.5], "unit": "% GDP", "type": "sparkline", "label_end": "2.5%", "years": ["2022","2023","2024","2025","2026"]}
+  ],
+  "items": [
+    {"title": "ACTIVITY TITLE", "status": "green", "trend": "up", "notes": "Unit, location, and significance to the advisor mission.", "link": "https://direct-article-url"}
+  ]
+}
+Rules: status = green|amber|red, trend = up|flat|down. Direct article URLs only.</div>
+        </div>
+      </div>
+
+      <!-- ECONOMIC -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Economic</div>
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div><span class="prompt-source">Macro Indicators &amp; Defense Economics</span><span class="prompt-source-url">World Bank · IMF · national statistics · OECD</span></div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p-e-1')">Copy Prompt</button>
+          </div>
+          <div class="prompt-text" id="p-e-1">You are a macroeconomic analyst preparing a [COUNTRY] economic update for a military advisor team brief ([YOUR UNIT]).
+
+If any bracketed placeholder above is unfilled, ask me for the missing information before you begin.
+
+Pull current data from the World Bank, IMF, OECD, and [COUNTRY]'s national statistics institute: GDP growth, inflation, unemployment, fiscal deficit, credit-rating actions, and defense-industrial or procurement-financing developments. Flag economic factors that could affect political stability, defense spending capacity, or the operating environment near [LOCATION].
+
+Return ONLY valid JSON with no preamble:
+{
+  "summary": "2-sentence executive summary with operational relevance",
+  "stats": [
+    {"label": "GDP Growth (YoY)", "value": "2.8%", "delta": "-0.4%", "delta_dir": "down", "type": "number"},
+    {"label": "Inflation Trend", "values": [4.1, 5.1, 6.2, 5.4, 4.8], "unit": "%", "type": "sparkline", "label_end": "4.8%", "years": ["Q1","Q2","Q3","Q4","Q1"]}
+  ],
+  "items": [
+    {"title": "ECONOMIC FACTOR", "status": "amber", "trend": "down", "notes": "Context — how does this affect the mission environment?", "link": "https://direct-article-url"}
+  ]
+}</div>
+        </div>
+      </div>
+
+      <!-- KEY LEADERS -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Key Leaders</div>
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div><span class="prompt-source">Civilian &amp; Military Leadership</span><span class="prompt-source-url">government sites · MoD · open sources</span></div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p-leaders')">Copy Prompt</button>
+          </div>
+          <div class="prompt-text" id="p-leaders">You are an intelligence analyst preparing a key-leaders reference on [COUNTRY] for [YOUR UNIT], partnered with [PARTNER UNIT] at [LOCATION].
+
+If any bracketed placeholder above is unfilled, ask me for the missing information before you begin.
+
+Identify current officeholders using [COUNTRY]'s official government and ministry of defence websites plus reputable open sources:
+- Civilian: head of state, head of government, foreign minister, defence minister, and any opposition figure central to current events
+- Military: chief of defence and the service chiefs relevant to the partner force
+- Partner unit: [PARTNER UNIT] commander, deputy/XO, and operations officer if publicly known — otherwise mark "TBD — verify with unit"
+
+For each leader give a 1-sentence operational-relevance note. If uncertain about a name, write "TBD — verify".
+
+Return ONLY valid JSON with no preamble:
+{
+  "leaders": {
+    "civilian": [ {"name": "Full Name", "title": "Role", "notes": "Relevance to advisor mission."} ],
+    "military": [ {"name": "Rank Full Name", "title": "Chief of Defence", "notes": "Why this matters."} ],
+    "unit": [ {"name": "Rank Full Name", "title": "[PARTNER UNIT] Commander", "notes": "Direct counterpart."} ]
+  }
+}</div>
+        </div>
+      </div>
+
+      <!-- FULL BRIEF GENERATOR -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Full Brief Generator</div>
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div><span class="prompt-source">All Pillars — Single Prompt</span><span class="prompt-source-url">Use with a web-enabled LLM</span></div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p-full')">Copy Prompt</button>
+          </div>
+          <div class="prompt-text" id="p-full">You are an intelligence analyst preparing a complete monthly DIME (Diplomatic, Informational, Military, Economic) update on [COUNTRY] for [YOUR UNIT], a military advisor team partnered with [PARTNER UNIT] at [LOCATION].
+
+If any bracketed placeholder above is unfilled, ask me for the missing information before you begin. Then confirm the reporting period with me (default: the past 30 days).
+
+Using open sources — [COUNTRY]'s foreign ministry and ministry of defence, alliance newsrooms (NATO/EU/regional), disinformation databases (EUvsDisinfo, EU DisinfoLab), press-freedom indices, conflict trackers (ACLED, ISW), and economic data (World Bank, IMF, national statistics) — compile a concise brief.
+
+Also compile a key-leaders reference (civilian, military, and [PARTNER UNIT] leadership) and, if useful geographic anchors exist, a map block with the capital, [LOCATION], and other operationally relevant sites.
+
+Return ONLY a single valid JSON object with no preamble, markdown, or explanation:
+{
+  "meta": {
+    "unit": "[YOUR UNIT]",
+    "country": "[COUNTRY]",
+    "period": "MONTH RANGE, YEAR",
+    "data_fetched": "DD Mon YYYY",
+    "classification": "UNCLASSIFIED // OPEN SOURCE",
+    "partner_unit": "[PARTNER UNIT]",
+    "map": {
+      "center": [LAT, LON],
+      "zoom": 6,
+      "markers": [
+        {"lat": 0.0, "lon": 0.0, "color": "#c8a84b", "symbol": "★", "title": "Capital — Name", "notes": "Why it matters."},
+        {"lat": 0.0, "lon": 0.0, "color": "#8b2222", "symbol": "●", "title": "[LOCATION] — [PARTNER UNIT]", "notes": "Partner unit location."}
+      ]
+    }
+  },
+  "dime": {
+    "diplomatic":    { "summary": "...", "stats": [ {"label":"...","value":"...","delta":"...","delta_dir":"up","type":"number"} ], "items": [ {"title":"TITLE","status":"green","trend":"up","notes":"...","link":"https://direct-article-url"} ] },
+    "informational": { "summary": "...", "stats": [], "items": [] },
+    "military":      { "summary": "...", "stats": [ {"label":"Trend","values":[1,2,3],"unit":"x","type":"sparkline","label_end":"3","years":["A","B","C"]} ], "items": [] },
+    "economic":      { "summary": "...", "stats": [], "items": [], "charts": [ {"title":"GDP Growth (%)","values":[2.1,1.4,0.8],"years":["2024","2025","2026"],"unit":"%","color":"#4a8a55","explain":"What this chart means and its source."} ] }
+  },
+  "leaders": {
+    "civilian": [ {"name":"...","title":"...","notes":"..."} ],
+    "military": [ {"name":"...","title":"...","notes":"..."} ],
+    "unit":     [ {"name":"TBD — verify with unit","title":"[PARTNER UNIT] Commander","notes":"..."} ]
+  },
+  "resources": {
+    "links": [
+      {"category": "Mission Sources", "cards": [ {"tag":"Source Org","title":"Readable Title","desc":"What this source is good for.","url":"https://..."} ]}
+    ],
+    "feeds": [ {"label":"Source RSS","url":"https://example.com/feed","color":"#c8a84b"} ]
+  }
+}
+
+Rules:
+- status: green|amber|red · trend/delta_dir: up|flat|down · all values as strings
+- 3-6 items per pillar; every item link is the DIRECT article URL
+- Be concise — this is a military brief, not an academic paper</div>
+          <div class="json-schema">
+            <div class="json-schema-label">Save output as brief_YYYYMM.json → Load JSON button → dashboard populates</div>
+            <pre>meta + dime + leaders + resources — every block optional except meta and dime</pre>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end prompts page -->
+
+    <!-- ══ KEY LEADERS PAGE ══ -->
+    <div class="page" id="page-leaders">
+      <div class="pillar-header">
+        <div class="pillar-title-row">
+          <div class="pillar-title">Key Leaders</div>
+          <div class="pillar-subtitle">Civilian & Military Leadership</div>
+        </div>
+        <div class="pillar-summary">
+          Civilian and military leadership relevant to the advisor mission, populated from the loaded JSON brief.
+          Role placeholders are shown until a brief is loaded.
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- CIVILIAN -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Civilian Leadership</div>
+        <div id="leaders-civilian" class="leaders-grid">
+          <div class="feed-error" style="grid-column:1/-1;">No brief loaded — showing default baseline.</div>
+        </div>
+      </div>
+
+      <!-- MILITARY -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Military Leadership</div>
+        <div id="leaders-military" class="leaders-grid"></div>
+      </div>
+
+      <!-- KEY UNIT POCs -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label" id="leaders-unit-label">Partner Unit POCs</div>
+        <div id="leaders-unit" class="leaders-grid"></div>
+      </div>
+
+    </div><!-- end leaders page -->
+
+    <!-- ══ RESOURCES PAGE ══ -->
+    <div class="page" id="page-resources">
+      <div class="pillar-header">
+        <div class="pillar-title-row">
+          <div class="pillar-title">Resources</div>
+          <div class="pillar-subtitle">Open Source Reference Links</div>
+        </div>
+        <div class="pillar-summary">
+          Global open-source references organized by DIME pillar. Load a brief JSON with a
+          <span style="font-family:'JetBrains Mono',monospace;">resources</span> block to add mission-specific sources at the top.
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- MISSION-SPECIFIC (JSON-driven) -->
+      <div class="prompt-pillar-section" id="mission-resources-section" style="display:none;">
+        <div class="prompt-pillar-label">Mission-Specific Sources</div>
+        <div id="mission-resources" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+      </div>
+
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Diplomatic</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="resource-card" onclick="window.open('https://www.nato.int/cps/en/natohq/news.htm','_blank')" style="cursor:pointer;">
+            <div class="rc-category">NATO HQ</div>
+            <div class="rc-title">NATO Newsroom</div>
+            <div class="rc-desc">Alliance-level press releases, summit communiques, and force-posture announcements.</div>
+            <div class="rc-url">www.nato.int/cps/en/natohq/news.htm ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.consilium.europa.eu/en/press/press-releases/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">EU Council</div>
+            <div class="rc-title">EU Council Press Releases</div>
+            <div class="rc-desc">European Council decisions, sanctions, and policy positions.</div>
+            <div class="rc-url">www.consilium.europa.eu/en/press/press-releases ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://press.un.org/en','_blank')" style="cursor:pointer;">
+            <div class="rc-category">UN</div>
+            <div class="rc-title">UN Press Releases</div>
+            <div class="rc-desc">Security Council and General Assembly statements and meeting coverage.</div>
+            <div class="rc-url">press.un.org/en ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.state.gov/countries-and-areas-list/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">US State Dept</div>
+            <div class="rc-title">State Department - Countries and Areas</div>
+            <div class="rc-desc">Country background notes, bilateral relations overviews, and advisories. Navigate to your AOR.</div>
+            <div class="rc-url">www.state.gov/countries-and-areas-list ↗</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Informational</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="resource-card" onclick="window.open('https://euvsdisinfo.eu/disinformation-cases/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">EUvsDisinfo</div>
+            <div class="rc-title">EU Disinformation Case Database</div>
+            <div class="rc-desc">Tracked and verified disinformation cases by country, narrative, and outlet. Filter by your AOR.</div>
+            <div class="rc-url">euvsdisinfo.eu/disinformation-cases ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.disinfo.eu/publications/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">EU DisinfoLab</div>
+            <div class="rc-title">EU DisinfoLab Publications</div>
+            <div class="rc-desc">Country disinformation-landscape reports and platform research.</div>
+            <div class="rc-url">www.disinfo.eu/publications ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://freedomhouse.org/countries/freedom-world/scores','_blank')" style="cursor:pointer;">
+            <div class="rc-category">Freedom House</div>
+            <div class="rc-title">Freedom in the World</div>
+            <div class="rc-desc">Annual press-freedom, internet-freedom, and governance scores per country.</div>
+            <div class="rc-url">freedomhouse.org/countries/freedom-world/scores ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://rsf.org/en/index','_blank')" style="cursor:pointer;">
+            <div class="rc-category">RSF</div>
+            <div class="rc-title">Reporters Without Borders - Index</div>
+            <div class="rc-desc">World Press Freedom Index ranking and narrative assessment per country.</div>
+            <div class="rc-url">rsf.org/en/index ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.gdeltproject.org/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">GDELT</div>
+            <div class="rc-title">GDELT Project</div>
+            <div class="rc-desc">Real-time global news monitoring in 100+ languages. Powers the live media charts on this dashboard.</div>
+            <div class="rc-url">www.gdeltproject.org ↗</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Military</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="resource-card" onclick="window.open('https://www.nato.int/cps/en/natohq/topics_49198.htm','_blank')" style="cursor:pointer;">
+            <div class="rc-category">NATO</div>
+            <div class="rc-title">NATO Defence Expenditure Reports</div>
+            <div class="rc-desc">Annual ally-by-ally defence spending: GDP percent, real spend, equipment share, trends.</div>
+            <div class="rc-url">www.nato.int/cps/en/natohq/topics_49198.htm ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://acleddata.com/data-export-tool/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">ACLED</div>
+            <div class="rc-title">Armed Conflict Location and Event Data</div>
+            <div class="rc-desc">Filterable conflict-event database for incident tracking and threat-pattern analysis.</div>
+            <div class="rc-url">acleddata.com/data-export-tool ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.understandingwar.org/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">ISW</div>
+            <div class="rc-title">Institute for the Study of War</div>
+            <div class="rc-desc">Daily campaign assessments and conflict analysis.</div>
+            <div class="rc-url">www.understandingwar.org ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.sipri.org/databases/milex','_blank')" style="cursor:pointer;">
+            <div class="rc-category">SIPRI</div>
+            <div class="rc-title">SIPRI Military Expenditure Database</div>
+            <div class="rc-desc">Long-run military spending data for nearly every country.</div>
+            <div class="rc-url">www.sipri.org/databases/milex ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.janes.com/osint-insights/defence-news','_blank')" style="cursor:pointer;">
+            <div class="rc-category">Janes (open)</div>
+            <div class="rc-title">Janes Defence News</div>
+            <div class="rc-desc">Open-access defence news: OOB changes, acquisitions, regional assessments.</div>
+            <div class="rc-url">www.janes.com/osint-insights/defence-news ↗</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">Economic</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="resource-card" onclick="window.open('https://data.worldbank.org/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">World Bank</div>
+            <div class="rc-title">World Bank Open Data</div>
+            <div class="rc-desc">GDP, inflation, unemployment, FDI, and military expenditure per country.</div>
+            <div class="rc-url">data.worldbank.org ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.imf.org/en/Countries','_blank')" style="cursor:pointer;">
+            <div class="rc-category">IMF</div>
+            <div class="rc-title">IMF Country Data</div>
+            <div class="rc-desc">Article IV consultations, assessments, and macro forecasts by country.</div>
+            <div class="rc-url">www.imf.org/en/Countries ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://data-explorer.oecd.org/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">OECD</div>
+            <div class="rc-title">OECD Data Explorer</div>
+            <div class="rc-desc">Standardized economic indicators for member and partner economies.</div>
+            <div class="rc-url">data-explorer.oecd.org ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://ec.europa.eu/eurostat','_blank')" style="cursor:pointer;">
+            <div class="rc-category">Eurostat</div>
+            <div class="rc-title">Eurostat</div>
+            <div class="rc-desc">EU-standardized statistics: trade, energy, labor, cohesion funds.</div>
+            <div class="rc-url">ec.europa.eu/eurostat ↗</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label">General Reference</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="resource-card" onclick="window.open('https://www.cia.gov/the-world-factbook/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">CIA</div>
+            <div class="rc-title">CIA World Factbook</div>
+            <div class="rc-desc">Authoritative baseline: geography, government, military, economy, demographics.</div>
+            <div class="rc-url">www.cia.gov/the-world-factbook ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.crisisgroup.org/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">ICG</div>
+            <div class="rc-title">International Crisis Group</div>
+            <div class="rc-desc">In-depth conflict analysis and regional stability assessments.</div>
+            <div class="rc-url">www.crisisgroup.org ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://www.rferl.org/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">RFE/RL</div>
+            <div class="rc-title">Radio Free Europe / Radio Liberty</div>
+            <div class="rc-desc">Independent regional reporting across Europe, Caucasus, and Central Asia.</div>
+            <div class="rc-url">www.rferl.org ↗</div>
+          </div>
+          <div class="resource-card" onclick="window.open('https://reliefweb.int/','_blank')" style="cursor:pointer;">
+            <div class="rc-category">ReliefWeb</div>
+            <div class="rc-title">ReliefWeb</div>
+            <div class="rc-desc">OCHA humanitarian situation reports and country updates.</div>
+            <div class="rc-url">reliefweb.int ↗</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- LIVE FEED -->
+      <div class="prompt-pillar-section">
+        <div class="prompt-pillar-label" style="display:flex;align-items:center;gap:12px;">
+          Live Feed
+          <span class="live-badge"><span class="live-dot" style="display:inline-block;"></span> Fetching sources...</span>
+          <span id="feedTimestamp" style="font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--text-muted);letter-spacing:1px;font-weight:400;"></span>
+        </div>
+        <div id="liveFeedGrid" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;letter-spacing:1px;color:var(--text-muted);padding:16px 0;" id="feedLoading">
+            Connecting to sources via RSS...
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end resources page -->
+
+  </div><!-- end content -->
+
+  <div class="classif-bar" id="bottomClassif">UNCLASSIFIED</div>
+<!-- CHART TOOLTIP -->
+<div class="chart-tooltip" id="chartTooltip">
+  <div class="tt-title" id="tt-title"></div>
+  <div class="tt-value" id="tt-value"></div>
+  <div class="tt-label" id="tt-label"></div>
+</div>
+
+</div><!-- end shell -->
+
+<!-- DROP OVERLAY -->
+<div class="drop-overlay" id="dropOverlay">
+  <div class="drop-box">
+    <div class="drop-box-title">Drop Brief JSON</div>
+    <div class="drop-box-sub">Release to load</div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

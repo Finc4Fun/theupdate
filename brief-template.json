@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "unit": "YOUR UNIT",
+    "country": "COUNTRY NAME",
+    "period": "MONTH RANGE, YEAR",
+    "data_fetched": "DD Mon YYYY",
+    "classification": "UNCLASSIFIED // OPEN SOURCE",
+    "partner_unit": "PARTNER UNIT NAME",
+    "map": {
+      "center": [0.0, 0.0],
+      "zoom": 6,
+      "markers": [
+        { "lat": 0.0, "lon": 0.0, "color": "#c8a84b", "symbol": "★", "title": "Capital — City Name", "notes": "Seat of government and primary diplomatic hub." },
+        { "lat": 0.0, "lon": 0.0, "color": "#8b2222", "symbol": "●", "title": "Partner Unit Location", "notes": "Advisor team primary partner unit location." },
+        { "lat": 0.0, "lon": 0.0, "color": "#4a8a55", "symbol": "▲", "title": "Key Base or Facility", "notes": "Why this location matters to the mission." }
+      ]
+    }
+  },
+  "dime": {
+    "diplomatic": {
+      "summary": "Two-sentence executive summary of the diplomatic environment for the period.",
+      "stats": [
+        { "label": "Example Number Stat", "value": "14", "delta": "+2", "delta_dir": "up", "type": "number" },
+        { "label": "Example Trend Stat", "values": [6, 7, 9, 10, 13], "unit": "engagements", "type": "sparkline", "label_end": "13", "years": ["Jan", "Feb", "Mar", "Apr", "May"] }
+      ],
+      "items": [
+        {
+          "title": "SHORT TITLE IN CAPS",
+          "status": "green",
+          "trend": "up",
+          "notes": "One to two sentence operational summary of the development.",
+          "link": "https://direct-url-of-the-source-article"
+        }
+      ]
+    },
+    "informational": {
+      "summary": "Two-sentence executive summary of the information environment.",
+      "stats": [],
+      "items": []
+    },
+    "military": {
+      "summary": "Two-sentence executive summary of the military situation.",
+      "stats": [],
+      "items": [],
+      "charts": [
+        {
+          "title": "Defence Spending (% GDP)",
+          "values": [1.8, 2.0, 2.2, 2.5],
+          "years": ["2023", "2024", "2025", "2026"],
+          "unit": "% GDP",
+          "color": "#c8a84b",
+          "explain": "What this chart shows and where the data came from. Shown in the hover tooltip."
+        }
+      ]
+    },
+    "economic": {
+      "summary": "Two-sentence executive summary of the economic situation.",
+      "stats": [],
+      "items": [],
+      "charts": []
+    }
+  },
+  "leaders": {
+    "civilian": [
+      { "name": "Full Name", "title": "Head of State", "notes": "One-sentence operational relevance." },
+      { "name": "Full Name", "title": "Defence Minister", "notes": "One-sentence operational relevance." }
+    ],
+    "military": [
+      { "name": "Rank Full Name", "title": "Chief of Defence", "notes": "One-sentence operational relevance." }
+    ],
+    "unit": [
+      { "name": "TBD — verify with unit", "title": "Partner Unit Commander", "notes": "Primary counterpart for the advisor team." }
+    ]
+  },
+  "resources": {
+    "links": [
+      {
+        "category": "Mission Sources",
+        "cards": [
+          {
+            "tag": "Source Org",
+            "title": "Readable Source Title",
+            "desc": "What this source is useful for.",
+            "url": "https://example.gov"
+          }
+        ]
+      }
+    ],
+    "feeds": [
+      { "label": "Source Name", "url": "https://example.com/rss.xml", "color": "#c8a84b" }
+    ]
+  }
+}
