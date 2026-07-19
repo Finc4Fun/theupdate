@@ -28,7 +28,10 @@
     --blue: #1a4a7a;
   }
 
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; overflow: hidden; font-size: 1.2rem; }
+  /* Root font size — every rem unit in this file scales from this value.
+     22px = presentation/TV-comfortable baseline. */
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; overflow: hidden; font-size: 22px; }
+  @media (max-width: 900px) { html, body { font-size: 17px; } }
 
   /* ── LAYOUT ── */
   .shell { display: flex; flex-direction: column; height: 100vh; }
